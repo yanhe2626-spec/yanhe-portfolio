@@ -1,1 +1,65 @@
+from pathlib import Path
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# 读取根目录下所有txt文件
+def read_all_txt_files(root_dir):
+    txt_contents = []
+    for files_path in Path(root_dir).rglob('*.txt'):
+        with open(files_path,"r",encoding='utf-8') as f:
+            content = f.read()
+        txt_contents.append({
+            "source":str(files_path),
+            "content":content
+        })
+    return txt_contents
+
+# 文本分割器
+def split_text(text,chunk_size=300,chunk_overlap=50):
+    chunks = []
+    start = 0
+    while len(text) > start:
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - chunk_overlap
+    return chunks  
+
+# 构建chunks，每个chunk包含content、source、chunk_id（打标签）
+def build_chunks(root_dir):
+    all_docs = read_all_txt_files(root_dir)
+    all_chunks = []
+
+    for doc in all_docs:
+        chunks = split_text(doc["content"])
+
+        for i, chunk_text in enumerate(chunks):
+         chunk_data = {
+        "content": chunk_text,
+        "source": doc["source"],
+        "chunk_id": i
+    }
+    all_chunks.append(chunk_data)
+    return all_chunks
+
+
+def main():
+    chunks = build_chunks("data")
+
+    print(f"共生成 {len(chunks)} 个 chunks")
+
+    if len(chunks) > 0:
+        first = chunks[0]
+
+        print("\n示例 chunk：")
+        print(first["content"][:100])  
+
+        print("\n来源：")
+        print(first["source"])
+
+        print("\nchunk_id：")
+        print(first["chunk_id"])
+
+
+if __name__ == "__main__":
+    main()
